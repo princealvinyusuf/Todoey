@@ -13,8 +13,8 @@ class TodoListViewController: UITableViewController {
     
     var itemArray = [Item]()
     var checkMark = false
-//    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
-//
+    //    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    //
     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     override func viewDidLoad() {
@@ -22,11 +22,11 @@ class TodoListViewController: UITableViewController {
         
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         
-//        loadItems()
+        loadItems()
         
     }
     
-    //MARK - Table View Datasource
+    // MARK: - Table View Datasource
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return itemArray.count
@@ -52,25 +52,32 @@ class TodoListViewController: UITableViewController {
         
     }
     
-    //MARK - Table View Delegate Method
+    //MARK: - Table View Delegate Method
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        
+        //Delete Section
+        // The first one -> Delete from context before the changes save to core data
+        // The second one -> Delete from itemArray
+        //        context.delete(itemArray[indexPath.row])
+        //        itemArray.remove(at: indexPath.row)
+        
         
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
         saveItems()
         
-//        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
-//            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-//        } else {
-//            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-//        }
+        //        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
+        //            tableView.cellForRow(at: indexPath)?.accessoryType = .none
+        //        } else {
+        //            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
+        //        }
         
         
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
-    //Mark - Add Button Pressed
+    // MARK: - Add Button Pressed
     
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         
@@ -80,8 +87,6 @@ class TodoListViewController: UITableViewController {
         
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             // What will happen if user click on Add Item button on our Alert
-            
-           
             
             let newItem = Item(context: self.context)
             newItem.title = textField.text!
@@ -103,6 +108,8 @@ class TodoListViewController: UITableViewController {
         
     }
     
+    // MARK: - Create item to Core Data
+    
     func saveItems() {
         do {
             try context.save()
@@ -113,17 +120,46 @@ class TodoListViewController: UITableViewController {
         tableView.reloadData()
     }
     
-//    func loadItems() {
-//        if let data = try? Data(contentsOf: dataFilePath!) {
-//            let decoder = PropertyListDecoder()
-//            do {
-//                itemArray = try decoder.decode([Item].self, from: data)
-//            } catch {
-//                print(error.localizedDescription)
-//            }
-//
-//        }
-//    }
+    // MARK: - Read item from Core Data
     
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
+//        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        do {
+            itemArray =  try context.fetch(request)
+        } catch {
+            print("Error from request \(error.localizedDescription)")
+        }
+        
+        
+        
+        //        if let data = try? Data(contentsOf: dataFilePath!) {
+        //            let decoder = PropertyListDecoder()
+        //            do {
+        //                itemArray = try decoder.decode([Item].self, from: data)
+        //            } catch {
+        //                print(error.localizedDescription)
+        //            }
+        //
+        //        }
+    }
+    
+}
+
+extension TodoListViewController: UISearchBarDelegate {
+    
+    // MARK: - Search Bar Delegate
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        
+        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        request.predicate = predicate
+        
+        let sortDescriptor = NSSortDescriptor(key: "title", ascending: true)
+        request.sortDescriptors = [sortDescriptor]
+        
+        loadItems(with: request)
+        
+    }
 }
 
