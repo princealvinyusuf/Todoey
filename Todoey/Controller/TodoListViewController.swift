@@ -39,6 +39,7 @@ class TodoListViewController: UITableViewController {
         cell.textLabel?.text = item.title
         
         // Ternary Operator
+        // Result / Variable To Change : Compare Statement : Atribute (Value)
         cell.accessoryType = item.done == true ? .checkmark : .none
         
         
@@ -76,6 +77,8 @@ class TodoListViewController: UITableViewController {
         
         tableView.deselectRow(at: indexPath, animated: true)
     }
+    
+    
     
     // MARK: - Add Button Pressed
     
@@ -123,7 +126,7 @@ class TodoListViewController: UITableViewController {
     // MARK: - Read item from Core Data
     
     func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
-//        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        //        let request : NSFetchRequest<Item> = Item.fetchRequest()
         do {
             itemArray =  try context.fetch(request)
         } catch {
@@ -160,6 +163,17 @@ extension TodoListViewController: UISearchBarDelegate {
         
         loadItems(with: request)
         
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            loadItems()
+            
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
+            
+        }
     }
 }
 
