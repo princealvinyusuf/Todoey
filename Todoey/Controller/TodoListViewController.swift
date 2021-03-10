@@ -12,18 +12,23 @@ import CoreData
 class TodoListViewController: UITableViewController {
     
     var itemArray = [Item]()
-    var checkMark = false
-    //    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
-    //
+    var selectedCategory : Category? {
+        didSet {
+            loadItems()
+        }
+    }
+    
     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
+    //    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    //
+    
+   
     override func viewDidLoad() {
         super.viewDidLoad()
         
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
-        
-        loadItems()
-        
+    
     }
     
     // MARK: - Table View Datasource
@@ -65,8 +70,8 @@ class TodoListViewController: UITableViewController {
         
         
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
-        
         saveItems()
+        tableView.deselectRow(at: indexPath, animated: true)
         
         //        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
         //            tableView.cellForRow(at: indexPath)?.accessoryType = .none
@@ -74,8 +79,6 @@ class TodoListViewController: UITableViewController {
         //            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
         //        }
         
-        
-        tableView.deselectRow(at: indexPath, animated: true)
     }
     
     
@@ -94,6 +97,7 @@ class TodoListViewController: UITableViewController {
             let newItem = Item(context: self.context)
             newItem.title = textField.text!
             newItem.done = false
+            newItem.parentCategory = self.selectedCategory
             self.itemArray.append(newItem)
             
             self.saveItems()
@@ -117,23 +121,36 @@ class TodoListViewController: UITableViewController {
         do {
             try context.save()
         } catch {
-            print(error)
+            print("Error saving context \(error.localizedDescription)")
         }
         
-        tableView.reloadData()
+        self.tableView.reloadData()
     }
     
     // MARK: - Read item from Core Data
     
-    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
         //        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        
+        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+        
+        if let additionalPredicate = predicate {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
+        } else {
+            request.predicate = categoryPredicate
+        }
+//        let compoundPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categorPredicate, predicate])
+//        request.predicate = compoundPredicate
+        
+        
+        
         do {
             itemArray =  try context.fetch(request)
         } catch {
             print("Error from request \(error.localizedDescription)")
         }
         
-        
+        tableView.reloadData()
         
         //        if let data = try? Data(contentsOf: dataFilePath!) {
         //            let decoder = PropertyListDecoder()
@@ -156,12 +173,12 @@ extension TodoListViewController: UISearchBarDelegate {
         let request: NSFetchRequest<Item> = Item.fetchRequest()
         
         let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
-        request.predicate = predicate
+//        request.predicate = predicate
         
         let sortDescriptor = NSSortDescriptor(key: "title", ascending: true)
         request.sortDescriptors = [sortDescriptor]
         
-        loadItems(with: request)
+        loadItems(with: request, predicate: predicate)
         
     }
     
