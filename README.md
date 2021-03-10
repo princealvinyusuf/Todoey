@@ -12,3 +12,5 @@ What i learnt?
 8. Codable
 9. Encoder
 10. Decoder
+
+All of saved data is using Core Data
